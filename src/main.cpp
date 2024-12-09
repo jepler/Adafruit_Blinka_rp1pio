@@ -73,17 +73,47 @@ static void free_pio(void) {
     pio = nullptr;
 }
 
+class StateMachine {
+    StateMachine(py::buffer program);
+    ~StateMachine();
+
+    void clear_fifos();
+
+    void set_frequency(double frequency);
+    void get_frequency() const;
+
+    void write(py::buffer buffer);
+    void read(py::buffer buffer);
+
+    void gpio_init(int pin_no, int count=1) {
+        for(int i=0; i<count; i++) {
+            pio_gpio_init(pin_no + i);
+        }
+    }
+
+    void set_consecutive_pindirs(int pin_no, int count, bool is_output) {
+        pio_sm_set_consecutive_pindirs(pio, sm, pin_no, count, is_output);
+    }
+    void set_sideset_pins(int pin_no, int count) {
+        pio_sm_set_sideset_pins(pio, pin_no);
+    }
+    void set_out_shift(bool shift_right, bool autopull, int pull_threshold);
+    void set_in_shift(bool shift_right, bool autopush, int push_threshold);
+    void set_fifo_join(pio_fifo_join join);
+    void set_wrap(size_t wrap_target, size_t wrap);
+};
+
 PYBIND11_MODULE(neopixel_write_pi5, m) {
     m.doc() = R"pbdoc(
-        neopixel_write for pi5
-        -----------------------
+        low level wrapper for piolib
+        ----------------------------
 
-        .. currentmodule:: neopixel_write_pi5
+        .. currentmodule:: rp1pio._piolib
 
         .. autosummary::
            :toctree: _generate
 
-           neopixel_write
+           _StateMachine
     )pbdoc";
 
     m.def("neopixel_write", &neopixel_write,
