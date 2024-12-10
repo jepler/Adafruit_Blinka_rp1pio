@@ -95,11 +95,9 @@ public:
             sm_config_set_sideset_pins(&c, first_sideset_pin_number);
         }
 
-printf("pull threshold=%d\n", pull_threshold);
         sm_config_set_out_shift(&c, out_shift_right, auto_pull, pull_threshold);
 
         double div = clock_get_hz(clk_sys) / frequency;
-printf("frequency=%f div=%f\n", frequency, div);
         sm_config_set_clkdiv(&c, div);
 
         pio_sm_init(pio, sm, offset, &c);
@@ -115,14 +113,12 @@ printf("frequency=%f div=%f\n", frequency, div);
         py::buffer_info info = b.request();
         uint32_t *ptr = reinterpret_cast<uint32_t*>(info.ptr);
         std::vector<uint32_t> vec;
-        printf("itemsize=%zd size=%zd\n", info.itemsize, info.size);
         // the DMA controller doesn't replicate 8- and 16-bit values like on rp2, so we have to do it ourselves
         if (info.itemsize != 4) {
             vec.reserve(info.size);
             switch(info.itemsize) {
                 case 1:
                 {
-        printf("replicating 8-bit values to 32 bits\n");
                     auto *buf = reinterpret_cast<uint8_t*>(info.ptr);
                     for(pybind11::ssize_t i=0; i<info.size; i++) {
                         vec.push_back(buf[i] * 0x01010101);
@@ -131,7 +127,6 @@ printf("frequency=%f div=%f\n", frequency, div);
                 }
                 case 2:
                 {
-        printf("replicating 16-bit values to 32 bits\n");
                     auto *buf = reinterpret_cast<uint16_t*>(info.ptr);
                     for(pybind11::ssize_t i=0; i<info.size; i++) {
                         vec.push_back(buf[i] * 0x00010001);
@@ -141,15 +136,9 @@ printf("frequency=%f div=%f\n", frequency, div);
                 default:
                     throw py::value_error("buffer must contain items of 1, 2, or 4 bytes");
             }
-        printf("setting ptr to vec[0]\n");
             ptr = &vec[0];
-        } else {
-        printf("using items as-is\n");
         }
         size_t size = info.size * sizeof(uint32_t);
-        printf("transfer size %zd\n", size);
-        printf("ptr @ %p info.ptr @ %p\n", ptr, info.ptr);
-printf("%08x %08x %08x %08x\n", ptr[0], ptr[1], ptr[2], ptr[3]);
         if (pio_sm_config_xfer(pio, sm, PIO_DIR_TO_SM, size, 1)) {
             throw std::runtime_error("pio_sm_config_xfer() failed");
         }
