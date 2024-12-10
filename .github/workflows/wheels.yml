@@ -39,8 +39,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ubuntu-latest
-        arch_linux: aarch64
+        os: ["ubuntu-latest"]
+        arch_linux: ["aarch64"]
     steps:
     - uses: actions/checkout@v4
 
