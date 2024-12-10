@@ -14,8 +14,6 @@ build:
     python: "3"
 
 python:
-  pre_install:
-    - pip install .
+  pip_install: true
   install:
     - requirements: docs/requirements.txt
-    - requirements: requirements.txt
