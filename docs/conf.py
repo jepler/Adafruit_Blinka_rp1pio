@@ -1,5 +1,5 @@
 #
-# adafruit-blinka-neopixel-pi5 documentation build configuration file, created by
+# Adafruit_Blinka_rp1pio documentation build configuration file, created by
 # sphinx-quickstart on Fri Feb 26 00:29:33 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -49,9 +49,9 @@ source_suffix = {".rst": "restructuredtext"}
 master_doc = "index"
 
 # General information about the project.
-project = "adafruit-blinka-neopixel-pi5"
-copyright = "2023 Jeff Epler"
-author = "Jeff Epler"
+project = "Adafruit Blinka rp1pio"
+copyright = "2024 Jeff Epler for Adafruit Industries"
+author = "Jeff Epler for Adafruit Industries"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -203,7 +203,7 @@ html_theme = "alabaster"
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "adafruit-blinka-neopixel-pi5doc"
+htmlhelp_basename = "Adafruit_Blinka_rp1piodoc"
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -224,8 +224,8 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "adafruit-blinka-neopixel-pi5.tex",
-        "adafruit-blinka-neopixel-pi5 Documentation",
+        "Adafruit_Blinka_rp1pio.tex",
+        "Adafruit_Blinka_rp1pio Documentation",
         "Jeff Epler",
         "manual",
     ),
@@ -259,8 +259,8 @@ latex_documents = [
 man_pages = [
     (
         master_doc,
-        "adafruit-blinka-neopixel-pi5",
-        "adafruit-blinka-neopixel-pi5 Documentation",
+        "Adafruit_Blinka_rp1pio",
+        "Adafruit_Blinka_rp1pio Documentation",
         [author],
         1,
     )
@@ -278,10 +278,10 @@ man_pages = [
 texinfo_documents = [
     (
         master_doc,
-        "adafruit-blinka-neopixel-pi5",
-        "adafruit-blinka-neopixel-pi5 Documentation",
+        "Adafruit_Blinka_rp1pio",
+        "Adafruit_Blinka_rp1pio Documentation",
         author,
-        "adafruit-blinka-neopixel-pi5",
+        "Adafruit_Blinka_rp1pio",
         "One line description of project.",
         "Miscellaneous",
     ),

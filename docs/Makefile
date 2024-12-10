@@ -94,9 +94,9 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/adafruit-blinka-neopixel-pi5.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/Adafruit_Blinka_rp1pio.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/adafruit-blinka-neopixel-pi5.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/Adafruit_Blinka_rp1pio.qhc"
 
 .PHONY: applehelp
 applehelp:
@@ -113,8 +113,8 @@ devhelp:
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/adafruit-blinka-neopixel-pi5"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/adafruit-blinka-neopixel-pi5"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/Adafruit_Blinka_rp1pio"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/Adafruit_Blinka_rp1pio"
 	@echo "# devhelp"
 
 .PHONY: epub

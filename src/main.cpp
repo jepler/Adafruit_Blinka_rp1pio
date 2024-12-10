@@ -150,8 +150,11 @@ public:
 
 PYBIND11_MODULE(adafruit_rp1pio, m) {
     m.doc() = R"pbdoc(
-        Control the RP1 I/O coprocessor
-        -------------------------------
+        Hardware interface to RP1 series’ programmable IO (PIO) peripheral.
+        -------------------------------------------------------------------
+
+        Except as noted, this is intended to be a subset of the functionality
+        in CircuitPython's ``rp2pio`` module.
 
         .. currentmodule:: adafruit_rp1pio
 
@@ -162,7 +165,7 @@ PYBIND11_MODULE(adafruit_rp1pio, m) {
     )pbdoc";
 
 
-    py::class_<StateMachine>(m, "StateMachine")
+    py::class_<StateMachine>(m, "StateMachine", "A single PIO StateMachine")
         .def(py::init<py::buffer /* assembled */,
                 double /* frequency */,
                 py::object /* first_sideset_pin */,
@@ -170,15 +173,17 @@ PYBIND11_MODULE(adafruit_rp1pio, m) {
                 bool /* auto_pull */,
                 bool /* out_shift_right */,
                 int /* pull_threshold */>(),
+            "Construct a StateMachine",
             py::arg("assembled"),
             py::arg("frequency"),
+            py::kw_only(),
             py::arg("first_sideset_pin") = py::none(),
             py::arg("sideset_pin_count") = 1,
             py::arg("auto_pull") = false,
             py::arg("out_shift_right") = true,
             py::arg("pull_threshold") = 32
             )
-        .def("write", &StateMachine::write);
+        .def("write", &StateMachine::write, "Write the data contained in buffer to the state machine", py::arg("buffer"));
 
 #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
