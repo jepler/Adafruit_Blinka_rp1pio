@@ -15,7 +15,6 @@ ext_modules = [
         ["src/main.cpp", "src/utils/piolib/piolib.c", "src/utils/piolib/pio_rp1.c"],
         define_macros = [('VERSION_INFO', __version__)],
         include_dirs = ['./src/utils/piolib/include'],
-        cxx_std = "20",
         extra_compile_args = ["-g3", "-Og"],
         ),
 ]
