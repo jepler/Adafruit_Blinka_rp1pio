@@ -33,8 +33,9 @@ the extension module to generate beautiful documentation in a variety formats.
 The following command generates HTML-based reference documentation; for other
 formats please refer to the Sphinx manual:
 
- - `cd Adafruit_Blinka_rp1pio/docs`
- - `make html`
+ - `cd Adafruit_Blinka_rp1pio`
+ - `pip install '.[docs]'`
+ - `make -C docs html`
 
 License
 -------

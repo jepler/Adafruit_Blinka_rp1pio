@@ -31,4 +31,8 @@ setup(
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
     python_requires=">=3.11",
+    install_requires=[],
+    extras_require={
+        'docs': ["sphinx", "sphinx-rtd-theme", "sphinxcontrib-jquery"],
+    }
 )
