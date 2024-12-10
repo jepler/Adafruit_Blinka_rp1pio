@@ -59,7 +59,7 @@ jobs:
       env:
         CIBW_ARCHS_LINUX: ${{ matrix.arch_linux }}
         CIBW_BUILD: "cp311* cp312* cp313*"
-
+        CIBW_MANYLINUX_AARCH64_IMAGE: "manylinux_2_28"
     - name: Verify clean directory
       run: git diff --exit-code
       shell: bash
