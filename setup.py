@@ -11,12 +11,12 @@ __version__ = get_version()
 #   say from a submodule.
 
 ext_modules = [
-    Pybind11Extension("rp1pio._piolib",
+    Pybind11Extension("adafruit_rp1pio",
         ["src/main.cpp", "src/utils/piolib/piolib.c", "src/utils/piolib/pio_rp1.c"],
         define_macros = [('VERSION_INFO', __version__)],
         include_dirs = ['./src/utils/piolib/include'],
         cxx_std = "20",
-        extra_compile_args = ["-g3"],
+        extra_compile_args = ["-g3", "-Og"],
         ),
 ]
 
