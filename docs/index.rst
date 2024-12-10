@@ -1,5 +1,5 @@
-adafruit-blinka-neopixel-pi5 Documentation
-==========================================
+Adafruit Blinka rp1pio Documentation
+====================================
 
 Contents:
 
