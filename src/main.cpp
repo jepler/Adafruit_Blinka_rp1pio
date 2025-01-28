@@ -97,7 +97,7 @@ public:
 
         sm_config_set_out_shift(&c, out_shift_right, auto_pull, pull_threshold);
 
-        double div = clock_get_hz(clk_sys) / frequency;
+        double div = frequency ? clock_get_hz(clk_sys) / frequency : 1.0;
         sm_config_set_clkdiv(&c, div);
 
         pio_sm_init(pio, sm, offset, &c);
