@@ -20,10 +20,10 @@ ext_modules = [
 ]
 
 setup(
-    name="adafruit-blinka-rp1pio",
+    name="Adafruit-Blinka-Raspberry-Pi5-rp1pio",
     version=__version__,
-    url="https://github.com/adafruit/adafruit-blinka-neopixel-pi5",
-    description="Control the PIO peripheral on a Pi 5",
+    url="https://github.com/adafruit/Adafruit_Blinka_Raspberry_Pi5_rp1pio",
+    description="Control the PIO peripheral on a Raspberry Pi 5",
     long_description="A pio-based driver similar to circuitpython's rp2pio",
     ext_modules=ext_modules,
     # Currently, build_ext only provides an optional "highest supported C++
