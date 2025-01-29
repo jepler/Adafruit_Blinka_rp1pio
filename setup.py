@@ -33,6 +33,6 @@ setup(
     python_requires=">=3.11",
     install_requires=[],
     extras_require={
-        'docs': ["sphinx", "sphinx-rtd-theme", "sphinxcontrib-jquery"],
+        'docs': ["myst-parser", "setuptools-scm", "sphinx", "sphinx-rtd-theme", "sphinxcontrib-jquery"],
     }
 )

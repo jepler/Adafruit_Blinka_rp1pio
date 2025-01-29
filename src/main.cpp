@@ -101,10 +101,16 @@ class StateMachine {
     PIO pio{};
     int sm{-1};
     int offset{-1};
+    double frequency;
 
+    void check_for_deinit() {
+        if(PIO_IS_ERR(pio)) {
+            throw std::runtime_error("StateMachine object has been deinitialized");
+        }
+    }
 public:
     StateMachine(py::buffer assembled,
-            double frequency,
+            double frequency_in,
             int8_t offset,
             py::buffer init,
             py::object first_sideset_pin,
@@ -212,8 +218,11 @@ public:
         sm_config_set_out_shift(&c, out_shift_right, auto_pull, pull_threshold);
         sm_config_set_in_shift(&c, in_shift_right, auto_push, push_threshold);
 
-        double div = frequency ? clock_get_hz(clk_sys) / frequency : 1.0;
-        sm_config_set_clkdiv(&c, div);
+        double div = frequency_in ? clock_get_hz(clk_sys) / frequency_in : 1.0;
+        int div_int = (int) div;
+        int div_frac = (int) ((div_int- div) * 256);
+        sm_config_set_clkdiv_int_frac(&c, div_int, div_frac);
+        frequency = clock_get_hz(clk_sys) / (div_int + div_frac / 256.);
 
         pio_sm_init(pio, sm, offset, &c);
         pio_sm_set_enabled(pio, sm, true);
@@ -227,21 +236,30 @@ public:
     }
 
     void run(py::buffer instructions) {
-            py::buffer_info info = instructions.request();
-            if (info.itemsize != 2) {
-                throw py::value_error("instructions: Expected array of type `H`");
-            }
-            auto raw_instructions = reinterpret_cast<const uint16_t *>(info.ptr);
-            for (ssize_t i = 0; i < info.size; i++) {
-                pio_sm_exec(pio, sm, raw_instructions[i]);
-            }
+        check_for_deinit();
+        py::buffer_info info = instructions.request();
+        if (info.itemsize != 2) {
+            throw py::value_error("instructions: Expected array of type `H`");
+        }
+        auto raw_instructions = reinterpret_cast<const uint16_t *>(info.ptr);
+        for (ssize_t i = 0; i < info.size; i++) {
+            pio_sm_exec(pio, sm, raw_instructions[i]);
+        }
+    }
+
+    void deinit() {
+        if(!PIO_IS_ERR(pio)) pio_close(pio);
+        pio = nullptr;
     }
 
     ~StateMachine() {
-        if(!PIO_IS_ERR(pio)) pio_close(pio);
+        deinit();
     }
 
+
     void readinto(py::buffer b) {
+        check_for_deinit();
+
         py::buffer_info info = b.request();
         uint32_t *info_ptr32 = reinterpret_cast<uint32_t*>(info.ptr);
         uint32_t *ptr = info_ptr32;
@@ -291,6 +309,8 @@ public:
     }
 
     void write(py::buffer b) {
+        check_for_deinit();
+
         py::buffer_info info = b.request();
         uint32_t *ptr = reinterpret_cast<uint32_t*>(info.ptr);
         std::vector<uint32_t> vec;
@@ -323,6 +343,10 @@ public:
         if (pio_sm_xfer_data(pio, sm, PIO_DIR_TO_SM, size, ptr)) {
             throw std::runtime_error("pio_sm_xfer_data() failed");
         }
+    }
+
+    double get_frequency() const {
+        return frequency;
     }
 };
 
@@ -387,8 +411,16 @@ PYBIND11_MODULE(adafruit_rp1pio, m) {
             )
         .def("write", &StateMachine::write, "Write the data contained in buffer to the state machine", py::arg("buffer"))
         .def("readinto", &StateMachine::readinto, "Read data from the state machine into a buffer", py::arg("buffer"))
-        .def("run", &StateMachine::run, "Execute instructions on the state machine", py::arg("instructions"));
-
+        .def("run", &StateMachine::run, "Execute instructions on the state machine", py::arg("instructions"))
+        .def("deinit", &StateMachine::deinit, "Releases the resources associated with the state machine.")
+        .def("__enter__", [](StateMachine &m) { return m; },
+            "Enables using a StateMachine object in a `with` statement.")
+        .def("__exit__", [](StateMachine &m, py::object unused1, py::object unused2, py::object unused3) { m.deinit(); },
+            """Release the hardware resources associated with this object""",
+            py::arg("exc_type"),
+            py::arg("exc_value"),
+            py::arg("exc_traceback"))
+        .def_property_readonly("frequency", &StateMachine::get_frequency, "The state machine's actual frequency");
 #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
 #else
