@@ -69,6 +69,11 @@ PIO pio_open_check() {
     return pio;
 }
 
+PIO pio_open_cached() {
+    static PIO result = pio_open_check(); // never pio_close()d even at shutdown.
+    return result;
+}
+
 int pio_sm_claim_unused_sm_check(PIO pio) {
     int sm = pio_claim_unused_sm(pio, false);
     if (sm < 0) {
@@ -184,7 +189,7 @@ public:
             int push_threshold,
             int wrap,
             int wrap_target) {
-        pio = pio_open_check();
+        pio = pio_open_cached();
         sm = pio_sm_claim_unused_sm_check(pio);
         py::buffer_info info = assembled.request();
         if (info.itemsize != 2) {
@@ -302,8 +307,11 @@ public:
     }
 
     void deinit() {
-        if(!PIO_IS_ERR(pio)) pio_close(pio);
+        if(!PIO_IS_ERR(pio) && sm != -1) {
+            pio_sm_unclaim(pio, sm);
+        }
         pio = nullptr;
+        sm = -1;
         if(pi) decref_program(*pi);
         pi = nullptr;
     }
