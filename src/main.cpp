@@ -62,8 +62,9 @@ PIO pio_open_check() {
 
     PIO pio = pio_open(0);
     if(PIO_IS_ERR(pio)) {
+        int err = PIO_ERR_VAL(pio);
         throw std::runtime_error(
-            py::str("Failed to open PIO device (error {})").attr("format")(PIO_ERR_VAL(pio)).cast<std::string>());
+            py::str("Failed to open PIO device (error {})").attr("format")(strerror(err)).cast<std::string>());
     }
     return pio;
 }
