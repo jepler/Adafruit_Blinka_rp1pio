@@ -154,6 +154,8 @@ uint8_t reuse_or_add_program(PIO pio, int8_t offset, const program &instructions
     i.refcnt++;
     i.offset = offset;
 
+    pi = &i;
+
     return offset;
 }
 
@@ -162,7 +164,7 @@ class StateMachine {
     int sm{-1};
     int offset{-1};
     double frequency;
-    program_info *pi;
+    program_info *pi = nullptr;
 
     void check_for_deinit() {
         if(PIO_IS_ERR(pio)) {
