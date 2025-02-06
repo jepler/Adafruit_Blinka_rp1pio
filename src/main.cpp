@@ -245,8 +245,8 @@ public:
                 throw py::value_error("sideset_pin_count out of range");
             }
 
-            PIO_PINMASK_MERGE(pindirs, PIO_PINMASK_CONSECUTIVE_PINS(sideset_pin_count, first_sideset_pin_number));
-            PIO_PINMASK_MERGE(pins_we_use, PIO_PINMASK_CONSECUTIVE_PINS(sideset_pin_count, first_sideset_pin_number));
+            PIO_PINMASK_MERGE(pindirs, PIO_PINMASK_CONSECUTIVE_PINS(first_sideset_pin_number, sideset_pin_count));
+            PIO_PINMASK_MERGE(pins_we_use, PIO_PINMASK_CONSECUTIVE_PINS(first_sideset_pin_number, sideset_pin_count));
 
             for(int i=0; i<sideset_pin_count; i++) {
                 pio_gpio_init(pio, first_sideset_pin_number + i);
@@ -266,7 +266,7 @@ public:
             sm_config_set_in_pins(&c, first_in_pin_number);
             PIO_PINMASK_MERGE(pin_pull_up, PIO_PINMASK_FROM_VALUE(pull_in_pin_up << first_in_pin_number));
             PIO_PINMASK_MERGE(pin_pull_down, PIO_PINMASK_FROM_VALUE(pull_in_pin_down << first_in_pin_number));
-            PIO_PINMASK_MERGE(pins_we_use, PIO_PINMASK_CONSECUTIVE_PINS(in_pin_count, first_in_pin_number));
+            PIO_PINMASK_MERGE(pins_we_use, PIO_PINMASK_CONSECUTIVE_PINS(first_in_pin_number, in_pin_count));
         }
 
         pio_sm_set_pindirs_with_mask(pio, sm, PIO_PINMASK_VALUE(pindirs), PIO_PINMASK_VALUE(pins_we_use));
