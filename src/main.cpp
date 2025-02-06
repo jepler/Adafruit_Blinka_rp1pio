@@ -11,7 +11,19 @@ namespace py = pybind11;
 
 namespace {
 
-typedef struct { uint32_t value;
+typedef std::vector<uint16_t> program;
+struct program_info {
+    std::vector<uint16_t> program;
+    PIO pio;
+    int8_t offset=0;
+    uint8_t refcnt=0;
+};
+
+constexpr size_t PIO_INSTRUCTION_SPACE = 32;
+program_info loaded_programs[PIO_INSTRUCTION_SPACE];
+
+typedef struct {
+    uint32_t value;
 } pio_pinmask_t;
 typedef uint32_t pio_pinmask_value_t;
 #define PIO_PINMASK_C(c) UINT32_C(c)
@@ -50,10 +62,16 @@ PIO pio_open_check() {
 
     PIO pio = pio_open(0);
     if(PIO_IS_ERR(pio)) {
+        int err = PIO_ERR_VAL(pio);
         throw std::runtime_error(
-            py::str("Failed to open PIO device (error {})").attr("format")(PIO_ERR_VAL(pio)).cast<std::string>());
+            py::str("Failed to open PIO device (error {})").attr("format")(strerror(err)).cast<std::string>());
     }
     return pio;
+}
+
+PIO pio_open_cached() {
+    static PIO result = pio_open_check(); // never pio_close()d even at shutdown.
+    return result;
 }
 
 int pio_sm_claim_unused_sm_check(PIO pio) {
@@ -97,11 +115,56 @@ int get_default(py::object o, T default_value) {
     return o.cast<T>();
 }
 
+void decref_program(program_info &pi) {
+    assert(pi.refcnt);
+    pi.refcnt--;
+    if(pi.refcnt == 0) {
+        struct pio_program dummy_program = {
+            .instructions = &pi.program[0],
+            .length = static_cast<uint8_t>(pi.program.size()),
+            .origin = pi.offset,
+        };
+
+        pio_remove_program(pi.pio, &dummy_program, pi.offset);
+        pi.pio = nullptr;
+    }
+}
+
+uint8_t reuse_or_add_program(PIO pio, int8_t offset, const program &instructions, program_info * &pi) {
+    for(auto & i : loaded_programs) {
+        if(i.program == instructions && (i.pio == pio) && (offset == -1 || offset == i.offset)) {
+            assert(i.refcnt > 0);
+            i.refcnt++;
+            pi = &i;
+            return i.offset;
+        }
+    }
+
+    struct pio_program program = {
+        .instructions = &instructions[0],
+        .length = static_cast<uint8_t>(instructions.size()),
+        .origin = offset,
+    };
+
+    offset = pio_add_program_check(pio, &program);
+    auto &i = loaded_programs[offset];
+    assert(!i.refcnt);
+    assert(!i.pio);
+    i.pio = pio;
+    i.refcnt++;
+    i.offset = offset;
+
+    pi = &i;
+
+    return offset;
+}
+
 class StateMachine {
     PIO pio{};
     int sm{-1};
     int offset{-1};
     double frequency;
+    program_info *pi = nullptr;
 
     void check_for_deinit() {
         if(PIO_IS_ERR(pio)) {
@@ -128,7 +191,7 @@ public:
             int push_threshold,
             int wrap,
             int wrap_target) {
-        pio = pio_open_check();
+        pio = pio_open_cached();
         sm = pio_sm_claim_unused_sm_check(pio);
         py::buffer_info info = assembled.request();
         if (info.itemsize != 2) {
@@ -147,7 +210,10 @@ public:
             }
         }
 
-        ssize_t program_len = info.size;
+        auto program_ptr = reinterpret_cast<const uint16_t*>(info.ptr);
+        auto program_len = info.size;
+        program instructions{program_ptr, program_ptr+program_len};
+
         if(wrap == -1)  {
             wrap = program_len - 1;
         }
@@ -160,23 +226,18 @@ public:
             throw py::value_error("wrap_target out of range");
         }
 
-        pio_pinmask_t pindirs = PIO_PINMASK_NONE;
-        pio_pinmask_t pins_we_use = PIO_PINMASK_NONE;
-        pio_pinmask_t pin_pull_up = PIO_PINMASK_NONE;
-        pio_pinmask_t pin_pull_down = PIO_PINMASK_NONE;
+        offset = reuse_or_add_program(pio, offset, instructions, pi);
 
-        struct pio_program program = {
-            .instructions = reinterpret_cast<uint16_t*>(info.ptr),
-            .length = static_cast<uint8_t>(info.size),
-            .origin = offset,
-        };
-
-        offset = pio_add_program_check(pio, &program);
         wrap += offset;
         wrap_target += offset;
 
         pio_sm_config c = pio_get_default_sm_config();
         sm_config_set_wrap(&c, wrap_target, wrap);
+
+        pio_pinmask_t pindirs = PIO_PINMASK_NONE;
+        pio_pinmask_t pins_we_use = PIO_PINMASK_NONE;
+        pio_pinmask_t pin_pull_up = PIO_PINMASK_NONE;
+        pio_pinmask_t pin_pull_down = PIO_PINMASK_NONE;
 
         if (!first_sideset_pin.is_none()) {
             auto first_sideset_pin_number = get_pin_number(first_sideset_pin);
@@ -184,8 +245,8 @@ public:
                 throw py::value_error("sideset_pin_count out of range");
             }
 
-            PIO_PINMASK_MERGE(pindirs, PIO_PINMASK_CONSECUTIVE_PINS(sideset_pin_count, first_sideset_pin_number));
-            PIO_PINMASK_MERGE(pins_we_use, PIO_PINMASK_CONSECUTIVE_PINS(sideset_pin_count, first_sideset_pin_number));
+            PIO_PINMASK_MERGE(pindirs, PIO_PINMASK_CONSECUTIVE_PINS(first_sideset_pin_number, sideset_pin_count));
+            PIO_PINMASK_MERGE(pins_we_use, PIO_PINMASK_CONSECUTIVE_PINS(first_sideset_pin_number, sideset_pin_count));
 
             for(int i=0; i<sideset_pin_count; i++) {
                 pio_gpio_init(pio, first_sideset_pin_number + i);
@@ -205,7 +266,7 @@ public:
             sm_config_set_in_pins(&c, first_in_pin_number);
             PIO_PINMASK_MERGE(pin_pull_up, PIO_PINMASK_FROM_VALUE(pull_in_pin_up << first_in_pin_number));
             PIO_PINMASK_MERGE(pin_pull_down, PIO_PINMASK_FROM_VALUE(pull_in_pin_down << first_in_pin_number));
-            PIO_PINMASK_MERGE(pins_we_use, PIO_PINMASK_CONSECUTIVE_PINS(in_pin_count, first_in_pin_number));
+            PIO_PINMASK_MERGE(pins_we_use, PIO_PINMASK_CONSECUTIVE_PINS(first_in_pin_number, in_pin_count));
         }
 
         pio_sm_set_pindirs_with_mask(pio, sm, PIO_PINMASK_VALUE(pindirs), PIO_PINMASK_VALUE(pins_we_use));
@@ -248,8 +309,13 @@ public:
     }
 
     void deinit() {
-        if(!PIO_IS_ERR(pio)) pio_close(pio);
+        if(!PIO_IS_ERR(pio) && sm != -1) {
+            pio_sm_unclaim(pio, sm);
+        }
         pio = nullptr;
+        sm = -1;
+        if(pi) decref_program(*pi);
+        pi = nullptr;
     }
 
     ~StateMachine() {
